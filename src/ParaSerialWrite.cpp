@@ -36,10 +36,78 @@ inline void DebugPulse(uint8_t pin, uint16_t count)
   }
 }
 #else
-inline void DebugPulse(uint8_t, uint8_t) {}
+inline void DebugPulse(uint8_t, uint16_t) {}
 #endif
 
+
+// This functions is returns 3 and 4  
+void ParaSerialWrite::delayCalc(uint16_t i) {
+  uint16_t x = 0, threes = 1, fours = 1;
+  if (i >= 7) {
+    i -= 7; //one cycles for both 3 and 4 is mandatory
+  } else {
+    i = 0;
+  }
+
+  // this logic is make sure we keep the accuracy above 6
+  if (i >= 6) {
+    x = i - 6; 
+    fours += (x / 12) * 3;
+    x = (x % 12) + 6;
+  } else {
+    x = i;
+  }
+  switch (x) {
+    case 2:
+      ++ threes;
+      break;
+    case 5:
+      threes += 2;
+      break;
+    case 4:
+    case 8:
+    case 12:
+    case 16:
+    case 20:
+      fours += x / 4;
+      break;
+    case 3:
+    case 6:
+    case 9:
+    case 15:
+    case 18:
+      threes += x / 3;
+      break;
+    case 7:
+      ++ threes; ++fours;
+      break;
+    case 10:
+      threes += 2; ++fours;
+      break;
+    case 11:
+      ++threes; fours += 2;
+      break;
+    case 13:
+      threes += 3; ++fours;
+      break;
+    case 14:
+      threes += 2; fours += 2;
+      break;
+    case 17:
+      threes += 3; fours += 2;
+      break;
+    case 19:
+      threes += 5; fours += 2;
+      break;
+      
+  }
+  _tx_delay3 = threes;
+  _tx_delay4 = fours;
+}
+
+
 ParaSerialWrite::ParaSerialWrite(uint8_t pins) {
+  // calculate register, pin and port prefix masks
   _reg = B00000000;
   _pins = _MAX_PINS;
   if (pins < _MAX_PINS)
@@ -47,40 +115,52 @@ ParaSerialWrite::ParaSerialWrite(uint8_t pins) {
   for (uint8_t i = 0; i < _pins; ++i) {
     _reg |= (1<<i);  
   }
-  DDRB |= _reg;
+  DDRB |= _reg; // may not necessary since write(0x00, ..) would do the job;
   _portPrefix = PORTB & ~_reg;
 }
 
 void ParaSerialWrite::begin(long speed, uint8_t frameSize) {
-  _frameSize = frameSize;
-  // Precalculate the various delays, in number of 4-cycle delays
-  _bitDelay = (F_CPU / speed);
-  _tx_delay = 1;
-  uint8_t tx_delay_map[6] = {36, 42, 48, 55, 62, 67};
-  if (_bitDelay > tx_delay_map[_pins - 1])
-    _tx_delay += (_bitDelay - tx_delay_map[_pins - 1]) / 4;
-  _mask [_frameSize];
+  _frameSize = frameSize; // number of bits in one frame included start, data, parity and stop
+
+  // Precalculate the various delays, in number of 4-cycle and 3-cycle of delays
+  float tx_delay_map[6] = {33, 39, 45, 49, 55, 59}; // numbers of cycles requred for a write loop
+  float cycles = (F_CPU / speed) - (tx_delay_map[_pins - 1]);
+  if (cycles < 0)
+    cycles = 0;
+  delayCalc( (int) cycles );
+  DebugPulse(_DEBUG_PIN2, (int) cycles);
+  DebugPulse(_DEBUG_PIN1, _tx_delay3);
+  DebugPulse(_DEBUG_PIN2, _tx_delay4);
+
+  // speed tweak. to save as many operation as possible in write loops
+  _mask [_frameSize]; //
   for (uint8_t i = 0; i < _frameSize; ++i) {
     _mask [i] = 1<<i;
   }
-  PORTB |= _reg;
+
+  PORTB |= _reg; // set the values of the pin to HIGH 
 }
 
 bool ParaSerialWrite::write(uint16_t d0) {
-  uint8_t newState;
+  uint8_t newState; // holds current stat value and make possible one step register write operation
   uint8_t i = 0;
-  uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+
+  // turn off interrupts for a clean txmit
+  uint8_t oldSREG = SREG; 
+  cli();
+
+  // do the actual transmission
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
     PORTB = _portPrefix | newState;
     if (i == _frameSize) 
-      break;
+      break; //delay does not happen after last bit
     else
-      _delay_loop_2(_tx_delay);
+      // daleys happen all the time. and addition if condition would take longer than actual delay loop
+      _delay_loop_1(_tx_delay3);
+      _delay_loop_2(_tx_delay4);
   }
-  PORTB |= _reg; // going back to idle state
   SREG = oldSREG; // turn interrupts back on
 }
 
@@ -88,7 +168,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+  cli();
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
@@ -97,17 +177,17 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
     if (i == _frameSize) 
       break;
     else
-      _delay_loop_2(_tx_delay);
+      _delay_loop_1(_tx_delay3);
+      _delay_loop_2(_tx_delay4);
   }
-  PORTB |= _reg; // going back to idle state
-  SREG = oldSREG; // turn interrupts back on
+  SREG = oldSREG;
 }
 
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+  cli();
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
@@ -117,17 +197,17 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
     if (i == _frameSize) 
       break;
     else
-      _delay_loop_2(_tx_delay);
+      _delay_loop_1(_tx_delay3);
+      _delay_loop_2(_tx_delay4);
   }
-  PORTB |= _reg; // going back to idle state
-  SREG = oldSREG; // turn interrupts back on
+  SREG = oldSREG;
 }
 
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+  cli();
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
@@ -138,10 +218,10 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) 
     if (i == _frameSize) 
       break;
     else
-      _delay_loop_2(_tx_delay);
+      _delay_loop_1(_tx_delay3);
+      _delay_loop_2(_tx_delay4);
   }
-  PORTB |= _reg; // going back to idle state
-  SREG = oldSREG; // turn interrupts back on
+  SREG = oldSREG;
 }
 
 
@@ -149,7 +229,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
   uint8_t newState;
   uint8_t i = 0;
   uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+  cli();
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
@@ -161,10 +241,10 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
     if (i == _frameSize) 
       break;
     else
-      _delay_loop_2(_tx_delay);
+      _delay_loop_1(_tx_delay3);
+      _delay_loop_2(_tx_delay4);
   }
-  PORTB |= _reg; // going back to idle state
-  SREG = oldSREG; // turn interrupts back on
+  SREG = oldSREG;
 }
 
 
@@ -173,7 +253,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
   uint8_t newState;
   uint8_t i = 0;
   uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
+  cli();
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
@@ -186,63 +266,8 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
     if (i == _frameSize) 
       break;
     else
-      _delay_loop_2(_tx_delay);
+      _delay_loop_1(_tx_delay3);
+      _delay_loop_2(_tx_delay4);
   }
-  PORTB |= _reg; // going back to idle state
-  SREG = oldSREG; // turn interrupts back on
+  SREG = oldSREG;
 }
-
-
-/***
-bool ParaSerialWrite::write(uint16_t row[]) {
-  uint16_t d0, d1, d2, d3, d4, d5 = 0xFFFF;
-  switch (_reg) {
-    case B111111: d5 = row[5];
-    case B11111:  d4 = row[4];
-    case B1111:   d3 = row[3];
-    case B111:    d2 = row[2];
-    case B11:     d1 = row[1];
-    case B1:      d0 = row[0];
-  }
-  uint8_t matrix [16];
-  uint8_t newState;
-  uint8_t portPrefix = PORTB & ~_reg;
-  uint8_t i = 0;
-  for (; i < _frameSize; ++i)  {
-    newState = _reg; 
-    switch (_reg) {
-      case B111111: if ( ! (d5 & (1<<i)) ) newState &= B011111;
-      case B11111:  if ( ! (d4 & (1<<i)) ) newState &= B101111;
-      case B1111:   if ( ! (d3 & (1<<i)) ) newState &= B110111;
-      case B111:    if ( ! (d2 & (1<<i)) ) newState &= B111011;
-      case B11:     if ( ! (d1 & (1<<i)) ) newState &= B111101;
-      case B1:      if ( ! (d0 & (1<<i)) ) newState &= B111110;
-    }
-    matrix [i]= portPrefix | newState;
-  }
-  uint16_t _tx_delay = _bitDelay - 2;
-  i = 0;
-  uint8_t oldSREG = SREG;
-  cli();  // turn off interrupts for a clean txmit
-  switch (_frameSize) {
-    case 16:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 15:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 14:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 13:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 12:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 11:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 10:  PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 9:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 8:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 7:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 6:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 5:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 4:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 3:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 2:   PORTB = matrix[i]; ++i; _delay_loop_2(_tx_delay);
-    case 1:   PORTB = matrix[i]; ++i; //no need to waste the time here
-  }
-  PORTB |= _reg; // idle
-  SREG = oldSREG; // turn interrupts back on
-}
-/***/

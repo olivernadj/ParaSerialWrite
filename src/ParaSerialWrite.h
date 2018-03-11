@@ -27,11 +27,12 @@ class ParaSerialWrite
   private:
     uint8_t _reg;
     uint8_t _pins;
-    uint16_t _bitDelay;
-    uint16_t _tx_delay;
+    uint16_t _tx_delay3;
+    uint16_t _tx_delay4;
     uint8_t _frameSize;
     uint8_t _portPrefix;
     uint16_t _mask [];
+    void delayCalc(uint16_t i);
 };
 
 #endif
