@@ -9,7 +9,7 @@
 // When set, _DEBUG co-opts pins 11 and 13 for debugging with an
 // oscilloscope or logic analyzer.  Beware: it also slightly modifies
 // the bit times, so don't rely on it too much at high baud rates
-#define _DEBUG 0
+#define _DEBUG 1
 #define _DEBUG_PIN1 B010000
 #define _DEBUG_PIN2 B100000
 
@@ -115,7 +115,7 @@ ParaSerialWrite::ParaSerialWrite(uint8_t pins) {
   for (uint8_t i = 0; i < _pins; ++i) {
     _reg |= (1<<i);  
   }
-  DDRB |= _reg; // may not necessary since write(0x00, ..) would do the job;
+  DDRB |= _reg; // set up registers for output
   _portPrefix = PORTB & ~_reg;
 }
 
@@ -123,7 +123,7 @@ void ParaSerialWrite::begin(long speed, uint8_t frameSize) {
   _frameSize = frameSize; // number of bits in one frame included start, data, parity and stop
 
   // Precalculate the various delays, in number of 4-cycle and 3-cycle of delays
-  float tx_delay_map[6] = {33, 39, 45, 49, 55, 59}; // numbers of cycles requred for a write loop
+  float tx_delay_map[6] = {32, 37, 44, 48, 54, 58}; // numbers of cycles requred for a write loop
   float cycles = (F_CPU / speed) - (tx_delay_map[_pins - 1]);
   if (cycles < 0)
     cycles = 0;
@@ -138,12 +138,13 @@ void ParaSerialWrite::begin(long speed, uint8_t frameSize) {
     _mask [i] = 1<<i;
   }
 
-  PORTB |= _reg; // set the values of the pin to HIGH 
+  PORTB |= _reg; // may not necessary since write(0x00, ..) would do the job;
 }
 
 bool ParaSerialWrite::write(uint16_t d0) {
   uint8_t newState; // holds current stat value and make possible one step register write operation
   uint8_t i = 0;
+  uint8_t stop = _frameSize - 1;
 
   // turn off interrupts for a clean txmit
   uint8_t oldSREG = SREG; 
@@ -154,7 +155,7 @@ bool ParaSerialWrite::write(uint16_t d0) {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
     PORTB = _portPrefix | newState;
-    if (i == _frameSize) 
+    if (i == stop) 
       break; //delay does not happen after last bit
     else
       // daleys happen all the time. and addition if condition would take longer than actual delay loop
@@ -167,6 +168,7 @@ bool ParaSerialWrite::write(uint16_t d0) {
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
   uint8_t newState;
   uint8_t i = 0;
+  uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
   cli();
   for (; ; ++i)  {
@@ -174,7 +176,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
     (d1 & _mask[i]) ? newState &= B111111 : newState &= B111101;
     PORTB = _portPrefix | newState;
-    if (i == _frameSize) 
+    if (i == stop) 
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -186,6 +188,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
   uint8_t newState;
   uint8_t i = 0;
+  uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
   cli();
   for (; ; ++i)  {
@@ -194,7 +197,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
     (d1 & _mask[i]) ? newState &= B111111 : newState &= B111101;
     (d2 & _mask[i]) ? newState &= B111111 : newState &= B111011;
     PORTB = _portPrefix | newState;
-    if (i == _frameSize) 
+    if (i == stop) 
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -206,6 +209,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) {
   uint8_t newState;
   uint8_t i = 0;
+  uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
   cli();
   for (; ; ++i)  {
@@ -215,7 +219,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) 
     (d2 & _mask[i]) ? newState &= B111111 : newState &= B111011;
     (d3 & _mask[i]) ? newState &= B111111 : newState &= B110111;
     PORTB = _portPrefix | newState;
-    if (i == _frameSize) 
+    if (i == stop) 
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -228,6 +232,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) 
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, uint16_t d4) {
   uint8_t newState;
   uint8_t i = 0;
+  uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
   cli();
   for (; ; ++i)  {
@@ -238,7 +243,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
     (d3 & _mask[i]) ? newState &= B111111 : newState &= B110111;
     (d4 & _mask[i]) ? newState &= B111111 : newState &= B101111;
     PORTB = _portPrefix | newState;
-    if (i == _frameSize) 
+    if (i == stop) 
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -252,6 +257,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
 bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, uint16_t d4, uint16_t d5) {
   uint8_t newState;
   uint8_t i = 0;
+  uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
   cli();
   for (; ; ++i)  {
@@ -263,7 +269,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
     (d4 & _mask[i]) ? newState &= B111111 : newState &= B101111;
     (d5 & _mask[i]) ? newState &= B111111 : newState &= B011111;
     PORTB = _portPrefix | newState;
-    if (i == _frameSize) 
+    if (i == stop) 
       break;
     else
       _delay_loop_1(_tx_delay3);
