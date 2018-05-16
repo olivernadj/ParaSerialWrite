@@ -1,5 +1,5 @@
-# ParaSerialWrite
-Paralell Software Serial Write for Arduino UNO
+# SoftSerialParallelWrite
+Parallel Software Serial Write for Arduino UNO
 
 6 port max speed 237000Hz 4.22us
 5 port max speed 260000Hz 3.84us

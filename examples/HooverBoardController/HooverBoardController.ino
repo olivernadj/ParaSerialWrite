@@ -1,7 +1,7 @@
-#include <ParaSerialWrite.h>
+#include <SoftSerialParallelWrite.h>
 
 
-ParaSerialWrite mySerial(2);
+SoftSerialParallelWrite mySerial(2);
 signed int leftSpeed = 40;
 signed int rightSpeed = 60;
 

@@ -1,21 +1,21 @@
 /*
-  ParaSerialWrite.h - Library for parallel serial communication ParaSerialWrte code.
+  SoftSerialParallelWrite.h - Library for parallel serial communication ParaSerialWrte code.
   Created by Oliver Nadj, 2018.
 
   Inspired by https://www.arduino.cc/en/Reference/SoftwareSerial
 */
-#ifndef ParaSerialWrite_h
-#define ParaSerialWrite_h
+#ifndef SoftSerialParallelWrite_h
+#define SoftSerialParallelWrite_h
 
 #include <Arduino.h>
 #include <inttypes.h>
 
 #define _MAX_PINS 6
 
-class ParaSerialWrite
+class SoftSerialParallelWrite
 {
   public:
-    ParaSerialWrite(uint8_t pins);
+    SoftSerialParallelWrite(uint8_t pins);
     void begin(long speed, uint8_t frameSize);
     //bool write(uint16_t row[]);
     bool write(uint16_t d0);

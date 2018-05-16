@@ -1,5 +1,5 @@
 /*
-  ParaSerialWrite.cpp - Library for parallel serial communication ParaSerialWrite code.
+  SoftSerialParallelWrite.cpp - Library for parallel serial communication SoftSerialParallelWrite code.
   Created by Oliver Nadj, 2018.
 
   Inspired by https://www.arduino.cc/en/Reference/SoftwareSerial
@@ -15,7 +15,7 @@
 
 
 #include <Arduino.h>
-#include <ParaSerialWrite.h>
+#include <SoftSerialParallelWrite.h>
 
 //
 // Debugging
@@ -41,7 +41,7 @@ inline void DebugPulse(uint8_t, uint16_t) {}
 
 
 // This functions is returns 3 and 4  
-void ParaSerialWrite::delayCalc(uint16_t i) {
+void SoftSerialParallelWrite::delayCalc(uint16_t i) {
   uint16_t x = 0, threes = 1, fours = 1;
   if (i >= 7) {
     i -= 7; //one cycles for both 3 and 4 is mandatory
@@ -106,7 +106,7 @@ void ParaSerialWrite::delayCalc(uint16_t i) {
 }
 
 
-ParaSerialWrite::ParaSerialWrite(uint8_t pins) {
+SoftSerialParallelWrite::SoftSerialParallelWrite(uint8_t pins) {
   // calculate register, pin and port prefix masks
   _reg = B00000000;
   _pins = _MAX_PINS;
@@ -119,7 +119,7 @@ ParaSerialWrite::ParaSerialWrite(uint8_t pins) {
   _portPrefix = PORTB & ~_reg;
 }
 
-void ParaSerialWrite::begin(long speed, uint8_t frameSize) {
+void SoftSerialParallelWrite::begin(long speed, uint8_t frameSize) {
   _frameSize = frameSize; // number of bits in one frame included start, data, parity and stop
 
   // Precalculate the various delays, in number of 4-cycle and 3-cycle of delays
@@ -141,7 +141,7 @@ void ParaSerialWrite::begin(long speed, uint8_t frameSize) {
   PORTB |= _reg; // may not necessary since write(0x00, ..) would do the job;
 }
 
-bool ParaSerialWrite::write(uint16_t d0) {
+bool SoftSerialParallelWrite::write(uint16_t d0) {
   uint8_t newState; // holds current stat value and make possible one step register write operation
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
@@ -165,7 +165,7 @@ bool ParaSerialWrite::write(uint16_t d0) {
   SREG = oldSREG; // turn interrupts back on
 }
 
-bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
+bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
@@ -185,7 +185,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1) {
   SREG = oldSREG;
 }
 
-bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
+bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
@@ -206,7 +206,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
   SREG = oldSREG;
 }
 
-bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) {
+bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
@@ -229,7 +229,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3) 
 }
 
 
-bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, uint16_t d4) {
+bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, uint16_t d4) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
@@ -254,7 +254,7 @@ bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, 
 
 
 
-bool ParaSerialWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, uint16_t d4, uint16_t d5) {
+bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint16_t d3, uint16_t d4, uint16_t d5) {
   uint8_t newState;
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
