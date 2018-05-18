@@ -122,8 +122,8 @@ SoftSerialParallelWrite::SoftSerialParallelWrite(uint8_t pins) {
 void SoftSerialParallelWrite::begin(long speed, uint8_t frameSize) {
   _frameSize = frameSize; // number of bits in one frame included start, data, parity and stop
 
-  // Precalculate the various delays, in number of 4-cycle and 3-cycle of delays
-  float tx_delay_map[6] = {32, 37, 44, 48, 54, 58}; // numbers of cycles requred for a write loop
+  // Pre-calculate the various delays, in number of 4-cycle and 3-cycle of delays
+  float tx_delay_map[6] = {32, 37, 44, 48, 54, 58}; // numbers of cycles required for a write loop
   float cycles = (F_CPU / speed) - (tx_delay_map[_pins - 1]);
   if (cycles < 0)
     cycles = 0;
@@ -158,7 +158,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0) {
     if (i == stop) 
       break; //delay does not happen after last bit
     else
-      // daleys happen all the time. and addition if condition would take longer than actual delay loop
+      // delays happen all the time. and addition if condition would take longer than actual delay loop
       _delay_loop_1(_tx_delay3);
       _delay_loop_2(_tx_delay4);
   }
