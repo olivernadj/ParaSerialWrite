@@ -32,13 +32,12 @@ To earn that speed with simultaneous communication it provide very simple functi
 
 
 ## Basic Usage
-
-`SoftSerialParallelWrite mySerial(2);`
-Create the SoftSerialParallelWrite object. Only one SoftSerialParallelWrite can be used, with the fixed pin assignments shown above.
-`mySerial.begin(baud_rate, frame_size);`
-Initialize the port to communicate at a specific baud rate, with the specific frame size. The frame size includes start bit, data bits, parity and stop bits.
-`mySerial.write(frameA, ...);`
-Transmit up to 6 UART frame. How to compose UART frame shown below.
+`SoftSerialParallelWrite mySerial(2);`  
+Create the SoftSerialParallelWrite object. Only one SoftSerialParallelWrite can be used, with the fixed pin assignments shown above.  
+`mySerial.begin(baud_rate, frame_size);`  
+Initialize the port to communicate at a specific baud rate, with the specific frame size. The frame size includes start bit, data bits, parity and stop bits.  
+`mySerial.write(frameA, ...);`  
+Transmit up to 6 UART frame. How to compose UART frame shown below.  
 `that's all :)`
 
 ### How to compose UART frame
