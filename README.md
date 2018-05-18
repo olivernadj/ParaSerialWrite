@@ -53,7 +53,7 @@ UART (Universal Asynchronous Receiver/Transmitter) device send a `start bit`, fi
 SoftSerialParallelWrite Library uses `uint16_t` (unsigned 16-bit integer) to keep the whole frame. Since the data transmits least-significant-first we need to left shift `<<` the data and put the start (0) bit in the least-significant position. Somehow like this: `uint16_t data = 0xA5 << 1;` `B0000000010100101 << 1; becomes: B0000000101001010`. 
 We also need to put the stop and parity bits on the most significant position. Somehow like this (two stop bit on 8 bit long data): `data = 0x600 | data;`  `B11000000000 | B0000000101001010; becomes: B0000011101001010`.
 
-##Example Program
+##E xample Program
 ```c
 #include <SoftSerialParallelWrite.h>
 SoftSerialParallelWrite mySerial(2);
