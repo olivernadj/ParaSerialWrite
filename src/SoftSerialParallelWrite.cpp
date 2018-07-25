@@ -40,7 +40,7 @@ inline void DebugPulse(uint8_t, uint16_t) {}
 #endif
 
 
-// This functions is returns 3 and 4  
+// This functions is returns 3 and 4
 void SoftSerialParallelWrite::delayCalc(uint16_t i) {
   uint16_t x = 0, threes = 1, fours = 1;
   if (i >= 7) {
@@ -51,7 +51,7 @@ void SoftSerialParallelWrite::delayCalc(uint16_t i) {
 
   // this logic is make sure we keep the accuracy above 6
   if (i >= 6) {
-    x = i - 6; 
+    x = i - 6;
     fours += (x / 12) * 3;
     x = (x % 12) + 6;
   } else {
@@ -99,7 +99,7 @@ void SoftSerialParallelWrite::delayCalc(uint16_t i) {
     case 19:
       threes += 5; fours += 2;
       break;
-      
+
   }
   _tx_delay3 = threes;
   _tx_delay4 = fours;
@@ -113,10 +113,9 @@ SoftSerialParallelWrite::SoftSerialParallelWrite(uint8_t pins) {
   if (pins < _MAX_PINS)
     _pins = pins;
   for (uint8_t i = 0; i < _pins; ++i) {
-    _reg |= (1<<i);  
+    _reg |= (1<<i);
   }
   DDRB |= _reg; // set up registers for output
-  _portPrefix = PORTB & ~_reg;
 }
 
 void SoftSerialParallelWrite::begin(long speed, uint8_t frameSize) {
@@ -145,9 +144,10 @@ bool SoftSerialParallelWrite::write(uint16_t d0) {
   uint8_t newState; // holds current stat value and make possible one step register write operation
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
+  uint8_t oldSREG = SREG;
+  _portPrefix = PORTB & ~_reg;
 
   // turn off interrupts for a clean txmit
-  uint8_t oldSREG = SREG; 
   cli();
 
   // do the actual transmission
@@ -155,7 +155,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0) {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
     PORTB = _portPrefix | newState;
-    if (i == stop) 
+    if (i == stop)
       break; //delay does not happen after last bit
     else
       // delays happen all the time. and addition if condition would take longer than actual delay loop
@@ -170,13 +170,14 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1) {
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
+  _portPrefix = PORTB & ~_reg;
   cli();
   for (; ; ++i)  {
     newState = _reg;
     (d0 & _mask[i]) ? newState &= B111111 : newState &= B111110;
     (d1 & _mask[i]) ? newState &= B111111 : newState &= B111101;
     PORTB = _portPrefix | newState;
-    if (i == stop) 
+    if (i == stop)
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -190,6 +191,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2) {
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
+  _portPrefix = PORTB & ~_reg;
   cli();
   for (; ; ++i)  {
     newState = _reg;
@@ -211,6 +213,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint1
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
+  _portPrefix = PORTB & ~_reg;
   cli();
   for (; ; ++i)  {
     newState = _reg;
@@ -219,7 +222,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint1
     (d2 & _mask[i]) ? newState &= B111111 : newState &= B111011;
     (d3 & _mask[i]) ? newState &= B111111 : newState &= B110111;
     PORTB = _portPrefix | newState;
-    if (i == stop) 
+    if (i == stop)
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -234,6 +237,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint1
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
+  _portPrefix = PORTB & ~_reg;
   cli();
   for (; ; ++i)  {
     newState = _reg;
@@ -243,7 +247,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint1
     (d3 & _mask[i]) ? newState &= B111111 : newState &= B110111;
     (d4 & _mask[i]) ? newState &= B111111 : newState &= B101111;
     PORTB = _portPrefix | newState;
-    if (i == stop) 
+    if (i == stop)
       break;
     else
       _delay_loop_1(_tx_delay3);
@@ -259,6 +263,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint1
   uint8_t i = 0;
   uint8_t stop = _frameSize - 1;
   uint8_t oldSREG = SREG;
+  _portPrefix = PORTB & ~_reg;
   cli();
   for (; ; ++i)  {
     newState = _reg;
@@ -269,7 +274,7 @@ bool SoftSerialParallelWrite::write(uint16_t d0, uint16_t d1, uint16_t d2, uint1
     (d4 & _mask[i]) ? newState &= B111111 : newState &= B101111;
     (d5 & _mask[i]) ? newState &= B111111 : newState &= B011111;
     PORTB = _portPrefix | newState;
-    if (i == stop) 
+    if (i == stop)
       break;
     else
       _delay_loop_1(_tx_delay3);
