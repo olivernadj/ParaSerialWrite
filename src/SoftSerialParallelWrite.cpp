@@ -6,10 +6,10 @@
 */
 
 
-// When set, _DEBUG co-opts pins 11 and 13 for debugging with an
+// When set, _DEBUG co-opts pins 12 and 13 for debugging with an
 // oscilloscope or logic analyzer.  Beware: it also slightly modifies
 // the bit times, so don't rely on it too much at high baud rates
-#define _DEBUG 1
+#define _DEBUG 0
 #define _DEBUG_PIN1 B010000
 #define _DEBUG_PIN2 B100000
 
@@ -132,8 +132,7 @@ void SoftSerialParallelWrite::begin(long speed, uint8_t frameSize) {
   DebugPulse(_DEBUG_PIN2, _tx_delay4);
 
   // speed tweak. to save as many operation as possible in write loops
-  _mask [_frameSize]; //
-  for (uint8_t i = 0; i < _frameSize; ++i) {
+  for (uint8_t i = 0; i < 16; ++i) {
     _mask [i] = 1<<i;
   }
 

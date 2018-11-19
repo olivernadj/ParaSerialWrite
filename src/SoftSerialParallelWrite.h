@@ -31,7 +31,7 @@ class SoftSerialParallelWrite
     uint16_t _tx_delay4;
     uint8_t _frameSize;
     uint8_t _portPrefix;
-    uint16_t _mask [];
+    uint16_t _mask [16];
     void delayCalc(uint16_t i);
 };
 
